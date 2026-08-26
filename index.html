@@ -54,19 +54,19 @@ img{display:block;max-width:100%}
 }
 #water-wash{
   z-index:2;
-  opacity:.42;
+  opacity:0;
   background:
-    radial-gradient(72% 54% at 58% 22%, rgba(52,181,211,.24), transparent 62%),
-    linear-gradient(90deg, rgba(1,8,21,.82), rgba(1,8,21,.34) 32%, transparent 60%, rgba(1,8,21,.66));
+    radial-gradient(72% 54% at 58% 22%, rgba(52,181,211,.20), transparent 62%),
+    linear-gradient(90deg, rgba(1,8,21,.52), rgba(1,8,21,.24) 32%, transparent 60%, rgba(1,8,21,.40));
 }
 #grain{
-  z-index:60;
-  opacity:.032;
+  z-index:12;
+  opacity:.026;
   background-size:160px 160px;
 }
 #vignette{
-  z-index:58;
-  background:radial-gradient(120% 92% at 50% 44%, transparent 44%, rgba(1,7,15,.72) 100%);
+  z-index:4;
+  background:none;
 }
 .page{position:relative;z-index:10}
 .nav{
@@ -173,8 +173,8 @@ img{display:block;max-width:100%}
 }
 .hero::before{
   background:
-    linear-gradient(90deg, rgba(2,10,21,.74), rgba(2,10,21,.28) 34%, transparent 58%),
-    linear-gradient(rgba(2,10,21,.70), transparent 36%, rgba(2,10,21,.42));
+    linear-gradient(90deg, rgba(2,10,21,.56), rgba(2,10,21,.22) 34%, transparent 58%),
+    linear-gradient(rgba(2,10,21,.42), transparent 36%, rgba(2,10,21,.26));
 }
 .hero-top{
   padding-top:calc(var(--nav-h) + clamp(18px,4.8vh,58px));
@@ -271,7 +271,7 @@ img{display:block;max-width:100%}
   position:absolute;
   right:clamp(18px,3vw,56px);
   top:clamp(112px,14vh,190px);
-  z-index:2;
+  z-index:6;
   writing-mode:vertical-rl;
   color:rgba(223,248,242,.62);
   font-size:clamp(32px,4vw,70px);
@@ -281,7 +281,7 @@ img{display:block;max-width:100%}
   position:absolute;
   right:var(--pad);
   bottom:clamp(132px,18vh,220px);
-  z-index:2;
+  z-index:6;
   width:clamp(220px,18vw,360px);
 }
 .preview-frame{
@@ -692,11 +692,13 @@ function bubbleSprite(){
   const c=cvs(128,128), x=c.getContext('2d');
   const g=x.createRadialGradient(45,38,4,64,64,56);
   g.addColorStop(0,'rgba(255,255,255,.95)');
-  g.addColorStop(.24,'rgba(210,248,255,.28)');
-  g.addColorStop(.72,'rgba(75,190,230,.13)');
+  g.addColorStop(.20,'rgba(220,250,255,.42)');
+  g.addColorStop(.66,'rgba(92,204,230,.20)');
   g.addColorStop(1,'rgba(255,255,255,0)');
   x.fillStyle=g; x.beginPath(); x.arc(64,64,56,0,TAU); x.fill();
-  x.strokeStyle='rgba(226,255,255,.66)'; x.lineWidth=3; x.beginPath(); x.arc(64,64,42,0,TAU); x.stroke();
+  x.strokeStyle='rgba(226,255,255,.82)'; x.lineWidth=4; x.beginPath(); x.arc(64,64,42,0,TAU); x.stroke();
+  x.fillStyle='rgba(255,255,255,.84)';
+  x.beginPath(); x.ellipse(45,38,9,5,-.55,0,TAU); x.fill();
   return c;
 }
 function glowSprite(color){
@@ -984,7 +986,7 @@ function buildBubbleWordmark(){
   let pen = 0, xMin = 1e9, xMax = -1e9, ascMax = 0, descMax = 0;
   const glyphs = [];
   for(const ch of text){
-    const g = makeWordGlyph(ch, fontSize, '#dee0df', '#dee0df');
+    const g = makeWordGlyph(ch, fontSize, '#f5fbf7', '#dfece8');
     g.pen = pen;
     glyphs.push(g);
     xMin = Math.min(xMin, pen);
@@ -999,7 +1001,7 @@ function buildBubbleWordmark(){
       map:tex,
       transparent:true,
       depthWrite:true,
-      fog:true,
+      fog:false,
       toneMapped:false,
       side:THREE.DoubleSide,
       opacity:0
@@ -1336,29 +1338,69 @@ function buildDust(){
   scene.add(pts);
 }
 function buildBubbles(){
-  const N = COARSE ? 90 : 190, r = rnd(88);
-  const pos = new Float32Array(N*3), seed = new Float32Array(N), size = new Float32Array(N);
-  for(let i=0;i<N;i++){
-    pos[i*3]=(r()-.5)*24;
-    pos[i*3+1]=r()*14;
-    pos[i*3+2]=-30+r()*34;
-    seed[i]=r();
-    size[i]=.7+r()*2.2;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  geo.setAttribute('aSeed', new THREE.BufferAttribute(seed,1));
-  geo.setAttribute('aSize', new THREE.BufferAttribute(size,1));
-  const mat = new THREE.ShaderMaterial({
-    uniforms:{uT:{value:0},uTex:{value:canvasTex(bubbleSprite())},uPx:{value:vpH()}},
-    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
-    vertexShader:'attribute float aSeed; attribute float aSize; uniform float uT; uniform float uPx; varying float vA; void main(){vec3 p=position; p.y=mod(p.y+uT*(.35+aSeed*.55),15.0); p.x+=sin(uT*.6+aSeed*20.0)*.35; vec4 mv=modelViewMatrix*vec4(p,1.0); vA=smoothstep(0.0,2.0,p.y)*smoothstep(15.0,11.5,p.y); gl_PointSize=uPx*(.012*aSize)/max(-mv.z,.8); gl_Position=projectionMatrix*mv;}',
-    fragmentShader:'uniform sampler2D uTex; varying float vA; void main(){vec4 t=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(t.rgb,t.a*vA*.72);}'
+  const tex = canvasTex(bubbleSprite());
+  const makeLayer = (count, emitters, seedBase, opts) => {
+    const r = rnd(seedBase);
+    const pos = new Float32Array(count*3), seed = new Float32Array(count), size = new Float32Array(count);
+    const speed = new Float32Array(count), drift = new Float32Array(count), phase = new Float32Array(count);
+    for(let i=0;i<count;i++){
+      const e = emitters[Math.floor(r()*emitters.length)];
+      const spread = e[2];
+      pos[i*3]=e[0] + (r()-.5)*spread;
+      pos[i*3+1]=(opts.baseY || .08) + r()*(opts.yJitter || .38);
+      pos[i*3+2]=e[1] + (r()-.5)*spread*.8;
+      seed[i]=r();
+      size[i]=(opts.sizeMin || .85) + Math.pow(r(), 1.55)*(opts.sizeRange || 4.1);
+      speed[i]=(opts.speedMin || .060) + r()*(opts.speedRange || .090);
+      drift[i]=(opts.driftMin || .20) + r()*(opts.driftRange || .72);
+      phase[i]=r();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('aSeed', new THREE.BufferAttribute(seed,1));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(size,1));
+    geo.setAttribute('aSpeed', new THREE.BufferAttribute(speed,1));
+    geo.setAttribute('aDrift', new THREE.BufferAttribute(drift,1));
+    geo.setAttribute('aPhase', new THREE.BufferAttribute(phase,1));
+    const mat = new THREE.ShaderMaterial({
+      uniforms:{uT:{value:0},uTex:{value:tex},uPx:{value:vpH()},uAlpha:{value:opts.alpha || .95}},
+      transparent:true, depthWrite:false, depthTest:opts.depthTest !== false, blending:THREE.AdditiveBlending,
+      vertexShader:'attribute float aSeed; attribute float aSize; attribute float aSpeed; attribute float aDrift; attribute float aPhase; uniform float uT; uniform float uPx; varying float vA; void main(){float cycle=fract(aPhase+uT*aSpeed); vec3 p=position; float rise=cycle*16.0; p.y += rise; float wob=sin(cycle*18.8496+aSeed*31.0); float wob2=sin(cycle*9.4248+aSeed*17.0); p.x += wob*aDrift + wob2*aDrift*.28; p.z += cos(cycle*12.566+aSeed*19.0)*aDrift*.20; vec4 mv=modelViewMatrix*vec4(p,1.0); float fadeIn=smoothstep(0.0,.10,cycle); float fadeOut=1.0-smoothstep(.80,1.0,cycle); vA=fadeIn*fadeOut*(.38+aSeed*.46); gl_PointSize=uPx*(.078*aSize*(1.0+cycle*.30))/max(-mv.z,.8); gl_Position=projectionMatrix*mv;}',
+      fragmentShader:'uniform sampler2D uTex; uniform float uAlpha; varying float vA; void main(){vec4 t=texture2D(uTex,gl_PointCoord); float edge=smoothstep(.025,.18,t.a); vec3 col=mix(vec3(.54,.82,.93), vec3(.96,1.0,1.0), t.r); gl_FragColor=vec4(col,t.a*edge*vA*uAlpha);}'
+    });
+    const pts = new THREE.Points(geo,mat);
+    pts.frustumCulled=false;
+    pts.renderOrder = opts.renderOrder || 9;
+    scene.add(pts);
+    return pts;
+  };
+  WORLD.bubbles = makeLayer(COARSE ? 78 : 138, [
+    [-4.2,-20.2,2.4],
+    [-1.2,-15.7,2.8],
+    [1.2,-13.5,2.8],
+    [4.8,-15.2,3.0],
+    [7.2,-12.0,2.0],
+    [-5.8,-9.4,1.9]
+  ], 88, {renderOrder:9, alpha:.82});
+  WORLD.frontBubbles = makeLayer(COARSE ? 26 : 46, [
+    [-3.0,-7.6,2.2],
+    [.2,-6.4,2.4],
+    [2.7,-7.2,2.2],
+    [5.8,-8.5,2.0],
+    [-5.4,-5.6,1.8]
+  ], 188, {
+    renderOrder:16,
+    depthTest:false,
+    alpha:.62,
+    sizeMin:.55,
+    sizeRange:2.35,
+    speedMin:.068,
+    speedRange:.080,
+    driftMin:.18,
+    driftRange:.55,
+    baseY:.05,
+    yJitter:.24
   });
-  const pts = new THREE.Points(geo,mat);
-  pts.frustumCulled=false;
-  WORLD.bubbles = pts;
-  scene.add(pts);
 }
 function buildJellyfish(){
   WORLD.jelly = [];
@@ -1417,6 +1459,7 @@ function resize(){
   camera.aspect = vpW()/vpH();
   camera.updateProjectionMatrix();
   measure();
+  if(WORLD.dust) WORLD.dust.material.uniforms.uPx.value=vpH();
   if(WORLD.bubbles) WORLD.bubbles.material.uniforms.uPx.value=vpH();
   layoutBubbleWordmark();
 }
@@ -1449,7 +1492,6 @@ function wireHeroExit(){
   if(!hero) return;
   const seq = [
     {el:document.querySelector('.preview'), at:.00, span:.26},
-    {el:document.querySelector('.wordmark'), at:.05, span:.38, shift:18},
     {el:document.querySelector('.hero-foot'), at:.12, span:.32, shift:18},
     {el:document.querySelector('.hero .fg'), at:.14, span:.32, shift:42},
     {el:document.querySelector('.hero-top'), at:.34, span:.34, shift:14},
