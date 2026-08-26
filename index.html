@@ -934,18 +934,18 @@ function makeWordGlyph(ch, fontSize, fillTop, fillBottom){
   x.fillText(ch, pad + left, pad + asc);
   return {canvas:c, w:cw, h:chh, adv:mt.width, asc, desc, left, right};
 }
-function addWordCoral(parent, tex, x, y, h, rot, flip, order){
+function addWordCoral(parent, tex, x, y, h, rot, flip, order, z){
   const mat = new THREE.MeshBasicMaterial({
     map:tex,
     transparent:true,
     alphaTest:.045,
-    depthWrite:false,
+    depthWrite:true,
     toneMapped:false,
     side:THREE.DoubleSide,
     opacity:.92
   });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1,1), mat);
-  mesh.position.set(x,y,.11);
+  mesh.position.set(x,y,z === undefined ? .11 : z);
   mesh.rotation.z = rot || 0;
   mesh.scale.set((flip ? -1 : 1) * h, h, 1);
   mesh.renderOrder = order || 24;
@@ -1022,7 +1022,7 @@ function buildBubbleWordmark(){
   const centers = glyphs.map(g=>g.pen + g.adv * .5);
   addWordCoral(group, coralTex, centers[0] - 78, 10, 192, -.16, false, 28);
   addWordCoral(group, coralTex, centers[1] - 98, -10, 172, .12, false, 29);
-  addWordCoral(group, coralTex, centers[2] -100, 30, 148, -.07, false, 30);
+  addWordCoral(group, coralTex, centers[2] -170, 30, 148, -.07, false, 17, -.08);
   addSeafloorCoral(coralTex, -5.85, -7.1, 1.58, -.12, false, 31);
   addSeafloorCoral(coralTex, 1.05, -11.6, 1.18, .1, true, 30);
   addSeafloorCoral(coralTex, 5.95, -16.9, .84, .14, false, 29);
